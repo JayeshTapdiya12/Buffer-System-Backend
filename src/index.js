@@ -28,7 +28,14 @@ app.use(express.json());
 app.use(morgan('combined', { stream: logStream }));
 
 // Connect to Local MongoDB (Buffer Storage)
-connectLocalDB();
+
+setInterval(() => {
+  console.log("🔄 Running periodic sync...");
+  connectLocalDB();
+
+}, 10 * 1000);
+// connectLocalDB();
+
 
 app.get('/api/v1/health-check', (req, res) => {
   res.status(200).json({ message: 'Local Buffer Backend is reachable' });
