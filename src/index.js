@@ -50,7 +50,7 @@ app.use(notFound);
 setInterval(() => {
   console.log("🔄 Running periodic sync...");
   syncBufferedData();
-}, 5 * 60 * 1000);  // Every 5 minutes
+}, 30 * 1000);  // Every 5 minutes
 
 app.listen(port, () => {
   logger.info(`Server started at ${host}:${port}/api/${api_version}/`);
