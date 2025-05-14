@@ -1,13 +1,16 @@
 import mongoose from 'mongoose';
 import SensorData from '../models/SensorData.js';
 import logger from '../config/logger.js';
+import { connectLocalOnly } from '../config/database.js';
 
 let cloudConnection = null;
 
 export const syncBufferedData = async () => {
     logger.info('⏳ Starting buffered data sync...');
 
-    // 1. Get unsynced data from local DB
+    // Connect to local DB to read unsynced data
+    await connectLocalOnly();
+
     const bufferedData = await SensorData.find({ synced: false });
 
     if (bufferedData.length === 0) {
@@ -16,7 +19,6 @@ export const syncBufferedData = async () => {
     }
 
     try {
-        // 2. Establish a separate connection to the cloud DB
         if (!cloudConnection || cloudConnection.readyState !== 1) {
             cloudConnection = await mongoose.createConnection(process.env.DATABASE_CLOUD, {
                 useNewUrlParser: true,
@@ -25,13 +27,12 @@ export const syncBufferedData = async () => {
             logger.info('✅ Connected to Cloud DB for syncing');
         }
 
-        // 3. Define a model on the cloud connection
-        const CloudSensorData = cloudConnection.model('CloudSensorData', SensorData.schema);
+        const SensorDatas = cloudConnection.model('SensorDatas', SensorData.schema);
 
-        // 4. Sync each record
         for (const record of bufferedData) {
             try {
-                await CloudSensorData.create({
+                await SensorDatas.create({
+                    _id: record._id,
                     temperature: record.temperature,
                     heartRate: record.heartRate,
                     humidity: record.humidity,
