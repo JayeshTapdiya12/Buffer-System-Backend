@@ -5,16 +5,16 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 
-import routes from './routes';
-import connectLocalDB from './config/database';
+import routes from './routes/index.js';
+import { connectDB } from './config/database.js';
 import {
   appErrorHandler,
   genericErrorHandler,
   notFound
-} from './middlewares/error.middleware';
-import logger, { logStream } from './config/logger';
+} from './middlewares/error.middleware.js';
+import logger, { logStream } from './config/logger.js';
 import morgan from 'morgan';
-import { syncBufferedData } from './services/syncService';  // Periodic sync service
+import { syncBufferedData } from './services/syncService.js';
 
 const app = express();
 const host = process.env.APP_HOST;
@@ -27,16 +27,12 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(morgan('combined', { stream: logStream }));
 
-// Connect to Local MongoDB (Buffer Storage)
-
+// Check DB periodically
 setInterval(() => {
-  console.log("🔄 Running periodic sync...");
-  connectLocalDB();
-
+  connectDB();
 }, 10 * 1000);
-// connectLocalDB();
 
-
+// Health Check
 app.get('/api/v1/health-check', (req, res) => {
   res.status(200).json({ message: 'Local Buffer Backend is reachable' });
 });
@@ -46,11 +42,11 @@ app.use(appErrorHandler);
 app.use(genericErrorHandler);
 app.use(notFound);
 
-// Start periodic sync process for buffered data (every 5 minutes)
+// Sync every 30s (can increase to 5m later)
 setInterval(() => {
-  console.log("🔄 Running periodic sync...");
+  console.log('🔄 Running periodic sync...');
   syncBufferedData();
-}, 30 * 1000);  // Every 5 minutes
+}, 30 * 1000);
 
 app.listen(port, () => {
   logger.info(`Server started at ${host}:${port}/api/${api_version}/`);
